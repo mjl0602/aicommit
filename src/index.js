@@ -56,7 +56,7 @@ program.description("Auto write commit with GPT").action(async () => {
     }写出一个简短的commit标题:`,
   ].join("\n");
   console.log("Generating commit...");
-//   console.log(prompt);
+  //   console.log(prompt);
   const commitText = await askAI(config.key, config.url, prompt);
   //   console.log(commitText);
 
@@ -128,7 +128,9 @@ program
   .description(
     [
       "Config keys or command with AI.",
-      "Example: aicommit set key=123456",
+      "",
+      "Command example: aicommit set key=123456",
+      "",
       "ValidKey:",
       "key: FastGPT request key, must set before use",
       "url: FastGPT request url, must set before use",
