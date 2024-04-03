@@ -4,6 +4,7 @@ const { program } = require("commander");
 const fs = require("fs");
 const { resolve } = require("path");
 const { exec } = require("child_process");
+const fetch = require('node-fetch');
 
 const readline = require("readline");
 
