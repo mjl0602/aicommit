@@ -83,9 +83,10 @@ program.description("Auto write commit with GPT").action(async () => {
   const commad = config.command || 'git commit -am "{commit}"';
   if (!~commad.indexOf("{commit}"))
     throw 'config.command must contains "{commit}" text';
-
+  const finalCommand = commad.replace("{commit}", commitText);
+  console.log(`RUN: ${finalCommand}`);
   const commitStdout = await new Promise((r, e) => {
-    exec(commad.replace("{commit}", commitText), (error, stdout, stderr) => {
+    exec(finalCommand, (error, stdout, stderr) => {
       if (error) {
         e(error);
         return;
