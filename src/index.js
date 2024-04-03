@@ -3,6 +3,8 @@ const fs = require("fs");
 const { resolve } = require("path");
 const { exec } = require("child_process");
 
+const readline = require("readline");
+
 const configPath = resolve(__dirname, "../config.json");
 if (!fs.existsSync(configPath))
   fs.writeFileSync(configPath, JSON.stringify({}, "", 2), {
@@ -18,13 +20,53 @@ program.description("Auto write commit with GPT").action(async () => {
   if (!config.url)
     throw `Must set a full url first like: aicommit set url=http://192.168.0.1:3000/api/v1/chat/completions`;
 
-  exec("git", ["diff"]);
+  const stdout = await new Promise((r, e) => {
+    exec("git diff", (error, stdout, stderr) => {
+      if (error) e(error);
+      r(stdout);
+    });
+  });
+  if (!stdout) {
+    console.log("No change to commit");
+  }
   const prompt = [
-    "你是Commit标题写作小助手，你通过git diff的代码变更信息写作commit标题",
+    "你是Commit标题写作小助手",
+    "这是一些代码变更信息",
+    stdout,
+    "----- 以上是代码变更信息 -----",
+    "作为标题写作小助手，你只输出简短的commit标题，不输出其他任何信息",
+    "现在，根据以上git diff提取到的的代码变更信息，用中文写出一个简短的commit标题:",
   ].join("\n");
+  console.log("Generating commit...");
+  console.log(prompt);
+  const commitText = await askAI(config.key, config.url, prompt);
+  //   console.log(commitText);
 
-  const response = await askAI(config.key, config.url, prompt);
-  console.log(response);
+  // 询问问题
+  const next = await new Promise((r) => {
+    // 创建readline接口实例
+    const rl = readline.createInterface({
+      input: process.stdin,
+      output: process.stdout,
+    });
+    rl.question(`${commitText}(y/n)`, (answer) => {
+      rl.close(); // 不要忘记关闭接口实例！
+      if (answer.toLocaleLowerCase() == "y") {
+        return r(true);
+      }
+      if (answer.toLocaleLowerCase() == "n") {
+        return r(false);
+      }
+    });
+  });
+  if (!next) return;
+  const commitStdout = await new Promise((r, e) => {
+    exec(`git commit -am "${commitText}"`, (error, stdout, stderr) => {
+      if (error) e(error);
+      r(stdout);
+    });
+  });
+  console.log(commitStdout);
 });
 
 async function askAI(key, host, text) {
