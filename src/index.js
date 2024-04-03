@@ -4,7 +4,7 @@ const { program } = require("commander");
 const fs = require("fs");
 const { resolve } = require("path");
 const { exec } = require("child_process");
-const fetch = require('node-fetch');
+const fetch = require("node-fetch");
 
 const readline = require("readline");
 
@@ -86,7 +86,10 @@ program.description("Auto write commit with GPT").action(async () => {
 
   const commitStdout = await new Promise((r, e) => {
     exec(commad.replace("{commit}", commitText), (error, stdout, stderr) => {
-      if (error) e(error);
+      if (error) {
+        e(error);
+        return;
+      }
       r(stdout);
     });
   });
