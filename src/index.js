@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 const { program } = require("commander");
 const fs = require("fs");
 const { resolve } = require("path");
@@ -7,9 +9,22 @@ const readline = require("readline");
 
 const configPath = resolve(__dirname, "../config.json");
 if (!fs.existsSync(configPath))
-  fs.writeFileSync(configPath, JSON.stringify({}, "", 2), {
-    encoding: "utf-8",
-  });
+  fs.writeFileSync(
+    configPath,
+    JSON.stringify(
+      {
+        key: "",
+        url: "",
+        lang: "中文",
+        command: 'git commit -am "{commit}"',
+      },
+      "",
+      2
+    ),
+    {
+      encoding: "utf-8",
+    }
+  );
 const configFile = fs.readFileSync(configPath, {
   encoding: "utf-8",
 });
@@ -29,16 +44,19 @@ program.description("Auto write commit with GPT").action(async () => {
   if (!stdout) {
     console.log("No change to commit");
   }
+  const lang = config.lang;
   const prompt = [
     "你是Commit标题写作小助手",
     "这是一些代码变更信息",
     stdout,
     "----- 以上是代码变更信息 -----",
     "作为标题写作小助手，你只输出简短的commit标题，不输出其他任何信息",
-    "现在，根据以上git diff提取到的的代码变更信息，用中文写出一个简短的commit标题:",
+    `现在，根据以上git diff提取到的的代码变更信息，用${
+      lang || "中文"
+    }写出一个简短的commit标题:`,
   ].join("\n");
   console.log("Generating commit...");
-  console.log(prompt);
+//   console.log(prompt);
   const commitText = await askAI(config.key, config.url, prompt);
   //   console.log(commitText);
 
@@ -50,7 +68,7 @@ program.description("Auto write commit with GPT").action(async () => {
       output: process.stdout,
     });
     rl.question(`${commitText}(y/n)`, (answer) => {
-      rl.close(); // 不要忘记关闭接口实例！
+      rl.close(); // 关闭接口实例
       if (answer.toLocaleLowerCase() == "y") {
         return r(true);
       }
@@ -60,6 +78,9 @@ program.description("Auto write commit with GPT").action(async () => {
     });
   });
   if (!next) return;
+  const commad = config.command || 'git commit -am "{commit}"';
+  if (!~commad.indexOf("{commit}"))
+    throw 'config.command must contains "{commit}" text';
   const commitStdout = await new Promise((r, e) => {
     exec(`git commit -am "${commitText}"`, (error, stdout, stderr) => {
       if (error) e(error);
@@ -105,7 +126,16 @@ async function askAI(key, host, text) {
 program
   .command("config [action] [value]")
   .description(
-    "Config keys or command with AI.\nExample: aicommit set key=123456"
+    [
+      "Config keys or command with AI.",
+      "Example: aicommit set key=123456",
+      "ValidKey:",
+      "key: FastGPT request key, must set before use",
+      "url: FastGPT request url, must set before use",
+      "command: Custom commit command",
+      "lang: Commit language",
+      "",
+    ].join("\n")
   )
   .action(async (action, value) => {
     if (action == "set") {
