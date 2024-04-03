@@ -43,6 +43,7 @@ program.description("Auto write commit with GPT").action(async () => {
   });
   if (!stdout) {
     console.log("No change to commit");
+    return;
   }
   const lang = config.lang;
   const prompt = [
