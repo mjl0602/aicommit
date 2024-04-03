@@ -1,5 +1,7 @@
 # AICOMMIT
 
+Auto generate commit with LLVM.
+
 ## Installing:
 
 ```
